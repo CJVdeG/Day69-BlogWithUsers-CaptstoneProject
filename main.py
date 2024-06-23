@@ -106,11 +106,11 @@ class Comment(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Connect comment to a post author
+    # Connect comment to a User
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     author: Mapped["User"] = relationship(back_populates="comments")
 
-    # Connect comment to a post id
+    # Connect comment to a Post
     post_id: Mapped[int] = mapped_column(ForeignKey("blog_posts.id"))
     post: Mapped["BlogPost"] = relationship(back_populates="comments")
 
@@ -228,7 +228,7 @@ def show_post(post_id):
             db.session.add(new_comment)
             db.session.commit()
 
-    # Render the post
+    # Render the post and post comments
     requested_post = db.get_or_404(BlogPost, post_id)
     return render_template("post.html", post=requested_post, form=form)
 
