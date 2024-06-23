@@ -35,6 +35,16 @@ app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlsdasdasdSsihBXox7C0sKR6b'
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
+# Gravatar for comment images
+gravatar = Gravatar(app,
+                    size=100,
+                    rating='g',
+                    default='retro',
+                    force_default=False,
+                    force_lower=False,
+                    use_ssl=False,
+                    base_url=None)
+
 
 # Create the database with Users
 class Base(DeclarativeBase):
