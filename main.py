@@ -14,7 +14,7 @@ from sqlalchemy import Integer, String, Text, ForeignKey
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 # Import your forms from the forms.py
-from forms import CreatePostForm, RegisterForm, LoginForm, Comment
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from sqlalchemy.sql import exists
 from typing import List
 
@@ -40,7 +40,7 @@ Bootstrap5(app)
 class Base(DeclarativeBase):
     pass
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
@@ -76,21 +76,43 @@ class User(UserMixin, db.Model):
     email: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(250), nullable=False)
     password: Mapped[str] = mapped_column(String(250), nullable=False)
+
+    # Connect User to BlogPost and Comment
     posts = relationship("BlogPost", back_populates="author")
+    comments = relationship("Comment", back_populates="author")
 
 
 # Configure Database table for POSTS
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
     id: Mapped[int] = mapped_column(primary_key=True)
-    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    author: Mapped["User"] = relationship(back_populates="posts")
     title: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
     subtitle: Mapped[str] = mapped_column(String(250), nullable=False)
     date: Mapped[str] = mapped_column(String(250), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
-    # author: Mapped[str] = mapped_column(String(250), nullable=False)
     img_url: Mapped[str] = mapped_column(String(250), nullable=False)
+
+    # Connect blog post to author
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    author: Mapped["User"] = relationship(back_populates="posts")
+
+    # Connect blogpost to comments
+    comments = relationship("Comment", back_populates="post")
+
+
+# Configure database table for COMMENTS
+class Comment(db.Model):
+    __table__name = "comments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Connect comment to a post author
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    author: Mapped["User"] = relationship(back_populates="comments")
+
+    # Connect comment to a post id
+    post_id: Mapped[int] = mapped_column(ForeignKey("blog_posts.id"))
+    post: Mapped["BlogPost"] = relationship(back_populates="comments")
 
 
 # Create the databases
@@ -186,11 +208,29 @@ def get_all_posts():
 
 
 # TODO: Allow logged-in users to comment on posts
-@app.route("/post/<int:post_id>")
+@app.route("/post/<int:post_id>", methods=["GET", "POST"])
 def show_post(post_id):
-    comment_form = Comment()
+    form = CommentForm()
+
+    # Check if anyone comments on the Post
+    if request.method == "POST":
+
+        # Check if the person is logged in
+        if not current_user.is_authenticated:
+
+            return redirect(url_for("login", error="You need to be logged in to comment"))
+
+        # Add comment to database
+        if form.validate_on_submit():
+            new_comment = Comment(text=form.text.data,
+                                  author=current_user,
+                                  post=db.get_or_404(BlogPost, post_id))
+            db.session.add(new_comment)
+            db.session.commit()
+
+    # Render the post
     requested_post = db.get_or_404(BlogPost, post_id)
-    return render_template("post.html", post=requested_post, form=comment_form)
+    return render_template("post.html", post=requested_post, form=form)
 
 
 # TODO: Use a decorator so only an admin user can create a new post
