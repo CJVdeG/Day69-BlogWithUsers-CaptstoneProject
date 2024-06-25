@@ -18,6 +18,8 @@ from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from sqlalchemy.sql import exists
 from typing import List
 
+# TODO: Delete post error
+# TODO: Check edit post if error
 
 # Function to hash and salt a user's password
 def hash_password(user_password):
