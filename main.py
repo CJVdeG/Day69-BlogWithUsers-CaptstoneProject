@@ -1,25 +1,19 @@
 from datetime import date
-
-import flask
-from flask import Flask, abort, request, render_template, redirect, url_for, flash, g, session
-from functools import wraps
+from flask import Flask, abort, request, render_template, redirect, url_for, flash
 from flask_bootstrap import Bootstrap5
 from flask_ckeditor import CKEditor
 from flask_gravatar import Gravatar
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-# from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, String, Text, ForeignKey
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-# Import your forms from the forms.py
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
-from sqlalchemy.sql import exists
-from typing import List
+import os
+from dotenv import load_dotenv
 
-# TODO: Delete post error
-# TODO: Check edit post if error
+load_dotenv()
 
 # Function to hash and salt a user's password
 def hash_password(user_password):
@@ -33,7 +27,7 @@ def hash_password(user_password):
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlsdasdasdSsihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = os.getenv('FLASK_KEY')
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
@@ -52,7 +46,7 @@ gravatar = Gravatar(app,
 class Base(DeclarativeBase):
     pass
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_URI')
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
